@@ -23,7 +23,7 @@ A Wayland-native auto clicker for Linux, built in Rust. Injects mouse clicks thr
 | Requirement | Notes |
 |---|---|
 | Linux, Wayland compositor | X11 is not supported |
-| Kernel with `uinput` module | Loaded by default on all major distributions |
+| Kernel with `uinput` module | May need to be loaded — see setup below |
 | Rust toolchain (1.70+) | Install via [rustup.rs](https://rustup.rs) |
 | GTK 4.10+ development libraries | See install commands below |
 | `libevdev` development headers | Required by the `evdev` crate |
@@ -77,9 +77,45 @@ sudo zypper install gtk4-devel libevdev-devel
 
 ## System Changes
 
-VibeClicker requires two changes to your system. Both are reversible.
+VibeClicker requires three changes to your system. All are reversible.
 
-### 1. Group membership — `input` group
+### 1. `uinput` kernel module + udev permissions
+
+**What it does:** Two things:
+- Loads the `uinput` kernel module so `/dev/uinput` exists at all.
+- Installs a udev rule that sets the device group to `input` with mode `0660`, so members of the `input` group can open it without `sudo`.
+
+**Why this is needed:** Even if you're in the `input` group, `/dev/uinput` is created as `root:root` by default. The udev rule fixes the ownership every time the device node is created (on boot or after `modprobe`).
+
+**How to apply (one-time):**
+
+```bash
+echo 'KERNEL=="uinput", GROUP="input", MODE="0660"' | sudo tee /etc/udev/rules.d/99-uinput.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+echo uinput | sudo tee /etc/modules-load.d/uinput.conf
+```
+
+The first two lines install the udev rule and apply it immediately. The third ensures the `uinput` module is loaded automatically on every boot.
+
+**Verify it worked:**
+
+```bash
+stat -c "%a %G" /dev/uinput
+# expected output: 660 input
+```
+
+**How to revert:**
+
+```bash
+sudo rm /etc/udev/rules.d/99-uinput.rules /etc/modules-load.d/uinput.conf
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+`/dev/uinput` will revert to `root:root` ownership. The module will no longer load at boot (though it stays loaded until the next reboot).
+
+---
+
+### 2. Group membership — `input` group
 
 **What it does:** Adds your user account to the `input` group, which grants read access to `/dev/input/event*` (keyboard devices, for global hotkeys) and write access to `/dev/uinput` (for injecting synthetic clicks).
 
@@ -108,7 +144,7 @@ Log out and back in afterward. Your user will no longer have access to `/dev/inp
 
 ---
 
-### 2. Config file — `~/.config/vibeclicker/config.toml`
+### 3. Config file — `~/.config/vibeclicker/config.toml`
 
 **What it does:** VibeClicker creates this file the first time you press Start. It stores your last-used settings (interval, button, hotkey, position mode, XY coordinates, click limit).
 
@@ -218,7 +254,12 @@ The stats bar at the bottom shows clicks per second, total clicks, and elapsed t
 
 1. Delete the binary: `rm ./target/release/vibeclicker` (or wherever you copied it).
 2. Remove config: `rm -rf ~/.config/vibeclicker`.
-3. Remove from `input` group if no longer needed: `sudo gpasswd -d $USER input`, then log out.
-4. Optionally remove system libraries installed earlier (e.g. `sudo apt remove libgtk-4-dev libevdev-dev`).
+3. Remove udev rule and module autoload:
+   ```bash
+   sudo rm /etc/udev/rules.d/99-uinput.rules /etc/modules-load.d/uinput.conf
+   sudo udevadm control --reload-rules && sudo udevadm trigger
+   ```
+4. Remove from `input` group if no longer needed: `sudo gpasswd -d $USER input`, then log out.
+5. Optionally remove system libraries installed earlier (e.g. `sudo apt remove libgtk-4-dev libevdev-dev`).
 
 No other files are written to your system.
