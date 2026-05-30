@@ -23,6 +23,7 @@ A Wayland-native auto clicker for Linux, built in Rust. Injects mouse clicks thr
 | Requirement | Notes |
 |---|---|
 | Linux, Wayland compositor | X11 is not supported |
+| systemd | Required for `modules-load.d` persistent module loading |
 | Kernel with `uinput` module | May need to be loaded — see setup below |
 | Rust toolchain (1.70+) | Install via [rustup.rs](https://rustup.rs) |
 | GTK 4.10+ development libraries | See install commands below |
