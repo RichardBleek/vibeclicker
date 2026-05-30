@@ -1,0 +1,29 @@
+# Rust build output
+/target
+
+# Editor / IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.vim/
+.nvim/
+
+# Agent / AI tools
+.claude/
+.cursor/
+.opencode/
+.aider*
+.continue/
+.codeium/
+.copilot/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
