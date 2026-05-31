@@ -2,6 +2,8 @@
 
 A Wayland-native auto clicker for Linux, built in Rust. Injects mouse clicks through the kernel's `/dev/uinput` interface — no X11, no XWayland, no `xdotool`.
 
+![VibeClicker Screenshot](vibeclicker.png)
+
 ---
 
 ## Features
